@@ -147,9 +147,7 @@ export function AdminSidebar({ userName, userEmail }: AdminSidebarProps) {
               className="border-border bg-surface shadow-hover z-50 min-w-[200px] rounded-xl border p-1.5"
             >
               {userEmail && (
-                <div className="text-muted px-3 py-2 text-xs">
-                  {userEmail}
-                </div>
+                <div className="text-muted px-3 py-2 text-xs">{userEmail}</div>
               )}
               <DropdownMenu.Item asChild>
                 <Link
