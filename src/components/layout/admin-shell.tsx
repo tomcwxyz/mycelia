@@ -13,13 +13,13 @@ interface AdminShellProps {
  */
 export function AdminShell({ children, userName, userEmail }: AdminShellProps) {
   return (
-    <div className="flex min-h-screen bg-cream">
+    <div className="bg-cream flex min-h-screen flex-col md:flex-row">
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 overflow-hidden"
       >
         <div
-          className="animate-hue absolute -right-32 -top-44 h-[560px] w-[560px] rounded-full"
+          className="animate-hue absolute -top-44 -right-32 h-[560px] w-[560px] rounded-full"
           style={{
             background:
               "radial-gradient(circle, rgba(173,184,120,0.4), transparent 65%)",
@@ -36,7 +36,7 @@ export function AdminShell({ children, userName, userEmail }: AdminShellProps) {
           }}
         />
         <div
-          className="absolute -left-48 top-44 h-[480px] w-[480px] rounded-full"
+          className="absolute top-44 -left-48 h-[480px] w-[480px] rounded-full"
           style={{
             background:
               "radial-gradient(circle, rgba(205,139,87,0.3), transparent 65%)",
