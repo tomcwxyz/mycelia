@@ -35,7 +35,7 @@ const TYPE_OPTIONS: FeedbackType[] = ["bug", "feature", "other"];
 const PRIORITY_OPTIONS: FeedbackPriority[] = ["low", "medium", "high"];
 
 const SELECT_CLASS =
-  "h-9 rounded-lg border border-border bg-white px-2 text-sm text-bark focus:outline-none focus:ring-2 focus:ring-terracotta";
+  "h-9 flex-1 min-w-[110px] rounded-lg border border-border bg-white px-2 text-sm text-bark focus:outline-none focus:ring-2 focus:ring-terracotta sm:flex-none";
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("en-GB", {
@@ -126,8 +126,8 @@ export default async function AdminFeedbackPage({
               <TableHead>Type</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>From</TableHead>
-              <TableHead>Received</TableHead>
+              <TableHead className="hidden sm:table-cell">From</TableHead>
+              <TableHead className="hidden md:table-cell">Received</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -140,6 +140,9 @@ export default async function AdminFeedbackPage({
                   >
                     {item.title}
                   </Link>
+                  <span className="mt-0.5 block text-xs text-muted sm:hidden">
+                    {item.submitterEmail ?? "—"} · {formatDate(item.createdAt)}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <FeedbackTypeBadge type={item.type} />
@@ -150,7 +153,7 @@ export default async function AdminFeedbackPage({
                 <TableCell>
                   <FeedbackStatusBadge status={item.status} />
                 </TableCell>
-                <TableCell className="text-muted">
+                <TableCell className="hidden text-muted sm:table-cell">
                   {item.submitterEmail ?? "—"}
                   {item.orgName && (
                     <span className="block text-xs text-muted/70">
@@ -158,7 +161,7 @@ export default async function AdminFeedbackPage({
                     </span>
                   )}
                 </TableCell>
-                <TableCell className="text-muted">
+                <TableCell className="hidden text-muted md:table-cell">
                   {formatDate(item.createdAt)}
                 </TableCell>
               </TableRow>

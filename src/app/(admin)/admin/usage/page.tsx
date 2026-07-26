@@ -35,12 +35,14 @@ export default async function AdminUsagePage() {
           <TableHeader>
             <TableRow>
               <TableHead>Organisation</TableHead>
-              <TableHead>Plan</TableHead>
+              <TableHead className="hidden sm:table-cell">Plan</TableHead>
               <TableHead>State</TableHead>
               <TableHead>Members</TableHead>
-              <TableHead>Connections</TableHead>
+              <TableHead className="hidden lg:table-cell">
+                Connections
+              </TableHead>
               <TableHead>Moments (mo)</TableHead>
-              <TableHead>Spaces</TableHead>
+              <TableHead className="hidden lg:table-cell">Spaces</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -52,7 +54,7 @@ export default async function AdminUsagePage() {
                     /{org.slug}
                   </span>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                   <Badge variant="outline">{org.plan}</Badge>
                 </TableCell>
                 <TableCell>
@@ -61,7 +63,7 @@ export default async function AdminUsagePage() {
                 <TableCell>
                   <UsageMeter used={org.members} limit={org.limits.users} />
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden lg:table-cell">
                   <UsageMeter
                     used={org.connections}
                     limit={org.limits.connections}
@@ -73,7 +75,7 @@ export default async function AdminUsagePage() {
                     limit={org.limits.momentsPerMonth}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden lg:table-cell">
                   <UsageMeter used={org.spaces} limit={org.limits.spaces} />
                 </TableCell>
               </TableRow>

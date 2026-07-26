@@ -105,14 +105,14 @@ export function AdminSidebar({ userName, userEmail }: AdminSidebarProps) {
       </aside>
 
       {/* Mobile top bar */}
-      <div className="border-border sticky top-0 z-30 flex items-center gap-3 overflow-x-auto border-b bg-white/80 px-4 py-3 backdrop-blur-xl md:hidden">
+      <div className="border-border sticky top-0 z-30 flex items-center gap-2 border-b bg-white/80 px-3 py-2.5 backdrop-blur-xl md:hidden">
         <Link href="/admin" className="flex shrink-0 items-center gap-1.5">
           <span className="font-display text-bark-dark text-lg">tending</span>
           <span className="bg-bark rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white uppercase">
             Admin
           </span>
         </Link>
-        <nav className="flex items-center gap-1">
+        <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
           {ADMIN_NAV.map((item) => (
             <Link
               key={item.href}
@@ -128,6 +128,46 @@ export function AdminSidebar({ userName, userEmail }: AdminSidebarProps) {
             </Link>
           ))}
         </nav>
+
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              aria-label="Account menu"
+              className="from-amber to-terracotta focus-visible:ring-terracotta flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[11px] font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+            >
+              {initials}
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              align="end"
+              side="bottom"
+              sideOffset={8}
+              className="border-border bg-surface shadow-hover z-50 min-w-[200px] rounded-xl border p-1.5"
+            >
+              {userEmail && (
+                <div className="text-muted px-3 py-2 text-xs">
+                  {userEmail}
+                </div>
+              )}
+              <DropdownMenu.Item asChild>
+                <Link
+                  href="/"
+                  className="text-bark hover:bg-cream-dark focus:bg-cream-dark block cursor-pointer rounded-md px-3 py-2 text-sm transition-colors outline-none"
+                >
+                  ← Back to app
+                </Link>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onSelect={() => signOut({ callbackUrl: "/" })}
+                className="text-bark hover:bg-cream-dark focus:bg-cream-dark cursor-pointer rounded-md px-3 py-2 text-sm transition-colors outline-none"
+              >
+                Sign out
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
       </div>
     </>
   );

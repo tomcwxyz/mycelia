@@ -28,20 +28,20 @@ export default async function AdminOrganisationsPage({
 
   return (
     <div className="stagger-children space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-4xl text-bark">Organisations</h1>
           <p className="mt-2 text-muted">
             {total} {total === 1 ? "organisation" : "organisations"}
           </p>
         </div>
-        <form method="GET" className="flex items-center gap-2">
+        <form method="GET" className="flex w-full items-center gap-2 sm:w-auto">
           <input
             type="search"
             name="q"
             defaultValue={q}
             placeholder="Search name or slug…"
-            className="h-10 w-64 rounded-lg border border-border bg-white px-3 text-sm text-bark placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-terracotta"
+            className="h-10 w-full rounded-lg border border-border bg-white px-3 text-sm text-bark placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-terracotta sm:w-64"
           />
           <Button type="submit" variant="outline" size="sm">
             Search
@@ -60,9 +60,11 @@ export default async function AdminOrganisationsPage({
               <TableHead>Name</TableHead>
               <TableHead>Plan</TableHead>
               <TableHead>State</TableHead>
-              <TableHead className="text-right">Members</TableHead>
-              <TableHead>Trial</TableHead>
-              <TableHead>Billing</TableHead>
+              <TableHead className="hidden text-right sm:table-cell">
+                Members
+              </TableHead>
+              <TableHead className="hidden md:table-cell">Trial</TableHead>
+              <TableHead className="hidden md:table-cell">Billing</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -80,7 +82,7 @@ export default async function AdminOrganisationsPage({
                 <TableCell>
                   <StateBadge state={org.state} />
                 </TableCell>
-                <TableCell className="text-right font-mono text-muted">
+                <TableCell className="hidden text-right font-mono text-muted sm:table-cell">
                   {org.memberCount}
                   <span className="text-muted/60">
                     {" "}
@@ -88,12 +90,12 @@ export default async function AdminOrganisationsPage({
                     {org.memberLimit === Infinity ? "∞" : org.memberLimit}
                   </span>
                 </TableCell>
-                <TableCell className="text-muted">
+                <TableCell className="hidden text-muted md:table-cell">
                   {org.state === "trialing" && org.trialEndsAt
                     ? `ends ${trialEndDescriptor(org.trialEndsAt)}`
                     : "—"}
                 </TableCell>
-                <TableCell className="text-muted">
+                <TableCell className="hidden text-muted md:table-cell">
                   {org.hasStripeCustomer ? (
                     <Badge variant="sky">Stripe</Badge>
                   ) : (

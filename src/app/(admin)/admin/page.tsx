@@ -22,7 +22,7 @@ export default async function AdminOverviewPage() {
         <p className="mt-2 text-muted">How Tending is growing, at a glance.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <StatCard
           label="Total users"
           value={metrics.totalUsers}
