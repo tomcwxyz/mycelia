@@ -74,14 +74,18 @@ export default async function AdminFeedbackPage({
   return (
     <div className="stagger-children space-y-6">
       <div>
-        <h1 className="font-display text-4xl text-bark">Feedback</h1>
-        <p className="mt-2 text-muted">
+        <h1 className="font-display text-bark text-4xl">Feedback</h1>
+        <p className="text-muted mt-2">
           {total} {total === 1 ? "item" : "items"} submitted from inside the app
         </p>
       </div>
 
       <form method="GET" className="flex flex-wrap items-center gap-2">
-        <select name="status" defaultValue={status ?? ""} className={SELECT_CLASS}>
+        <select
+          name="status"
+          defaultValue={status ?? ""}
+          className={SELECT_CLASS}
+        >
           <option value="">All statuses</option>
           {STATUS_OPTIONS.map((value) => (
             <option key={value} value={value}>
@@ -115,59 +119,91 @@ export default async function AdminFeedbackPage({
       </form>
 
       {rows.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-white/50 p-8 text-center text-muted">
+        <p className="border-border text-muted rounded-xl border border-dashed bg-white/50 p-8 text-center">
           No feedback matches these filters.
         </p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="hidden sm:table-cell">From</TableHead>
-              <TableHead className="hidden md:table-cell">Received</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <>
+          <div className="space-y-3 md:hidden">
             {rows.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">
-                  <Link
-                    href={`/admin/feedback/${item.id}`}
-                    className="hover:text-terracotta hover:underline"
-                  >
-                    {item.title}
-                  </Link>
-                  <span className="mt-0.5 block text-xs text-muted sm:hidden">
-                    {item.submitterEmail ?? "—"} · {formatDate(item.createdAt)}
-                  </span>
-                </TableCell>
-                <TableCell>
+              <div
+                key={item.id}
+                className="border-border shadow-lift rounded-xl border bg-white/80 p-4"
+              >
+                <Link
+                  href={`/admin/feedback/${item.id}`}
+                  className="text-bark hover:text-terracotta font-medium hover:underline"
+                >
+                  {item.title}
+                </Link>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   <FeedbackTypeBadge type={item.type} />
-                </TableCell>
-                <TableCell>
                   <FeedbackPriorityBadge priority={item.priority} />
-                </TableCell>
-                <TableCell>
                   <FeedbackStatusBadge status={item.status} />
-                </TableCell>
-                <TableCell className="hidden text-muted sm:table-cell">
-                  {item.submitterEmail ?? "—"}
-                  {item.orgName && (
-                    <span className="block text-xs text-muted/70">
-                      {item.orgName}
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell className="hidden text-muted md:table-cell">
-                  {formatDate(item.createdAt)}
-                </TableCell>
-              </TableRow>
+                </div>
+                <div className="text-muted mt-3 flex items-center justify-between text-sm">
+                  <span>
+                    {item.submitterEmail ?? "—"}
+                    {item.orgName && (
+                      <span className="text-muted/70 block text-xs">
+                        {item.orgName}
+                      </span>
+                    )}
+                  </span>
+                  <span>{formatDate(item.createdAt)}</span>
+                </div>
+              </div>
             ))}
-          </TableBody>
-        </Table>
+          </div>
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>From</TableHead>
+                  <TableHead>Received</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/admin/feedback/${item.id}`}
+                        className="hover:text-terracotta hover:underline"
+                      >
+                        {item.title}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <FeedbackTypeBadge type={item.type} />
+                    </TableCell>
+                    <TableCell>
+                      <FeedbackPriorityBadge priority={item.priority} />
+                    </TableCell>
+                    <TableCell>
+                      <FeedbackStatusBadge status={item.status} />
+                    </TableCell>
+                    <TableCell className="text-muted">
+                      {item.submitterEmail ?? "—"}
+                      {item.orgName && (
+                        <span className="text-muted/70 block text-xs">
+                          {item.orgName}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted">
+                      {formatDate(item.createdAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       <Pagination

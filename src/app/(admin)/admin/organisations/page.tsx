@@ -31,8 +31,8 @@ export default async function AdminOrganisationsPage({
     <div className="stagger-children space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-4xl text-bark">Organisations</h1>
-          <p className="mt-2 text-muted">
+          <h1 className="font-display text-bark text-4xl">Organisations</h1>
+          <p className="text-muted mt-2">
             {total} {total === 1 ? "organisation" : "organisations"}
           </p>
         </div>
@@ -42,7 +42,7 @@ export default async function AdminOrganisationsPage({
             name="q"
             defaultValue={q}
             placeholder="Search name or slug…"
-            className="h-10 w-full rounded-lg border border-border bg-white px-3 text-sm text-bark placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-terracotta sm:w-64"
+            className="border-border text-bark placeholder:text-muted focus:ring-terracotta h-10 w-full rounded-lg border bg-white px-3 text-sm focus:ring-2 focus:outline-none sm:w-64"
           />
           <Button type="submit" variant="outline" size="sm">
             Search
@@ -51,70 +51,112 @@ export default async function AdminOrganisationsPage({
       </div>
 
       {rows.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-white/50 p-8 text-center text-muted">
+        <p className="border-border text-muted rounded-xl border border-dashed bg-white/50 p-8 text-center">
           No organisations match “{q}”.
         </p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>State</TableHead>
-              <TableHead className="hidden text-right sm:table-cell">
-                Members
-              </TableHead>
-              <TableHead className="hidden md:table-cell">Trial</TableHead>
-              <TableHead className="hidden md:table-cell">Billing</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <>
+          <div className="space-y-3 md:hidden">
             {rows.map((org) => (
-              <TableRow key={org.id}>
-                <TableCell className="font-medium">
+              <div
+                key={org.id}
+                className="border-border shadow-lift rounded-xl border bg-white/80 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
                   <Link
                     href={`/admin/organisations/${org.id}`}
-                    className="hover:text-terracotta"
+                    className="text-bark hover:text-terracotta font-medium"
                   >
                     {org.name}
+                    <span className="text-muted ml-2 font-mono text-xs">
+                      /{org.slug}
+                    </span>
                   </Link>
-                  <span className="ml-2 font-mono text-xs text-muted">
-                    /{org.slug}
-                  </span>
-                </TableCell>
-                <TableCell>
                   <Badge variant="outline">{org.plan}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1.5">
-                    <StateBadge state={org.state} />
-                    {org.isComped && <CompedBadge />}
-                  </div>
-                </TableCell>
-                <TableCell className="hidden text-right font-mono text-muted sm:table-cell">
-                  {org.memberCount}
-                  <span className="text-muted/60">
-                    {" "}
-                    /{" "}
-                    {org.memberLimit === Infinity ? "∞" : org.memberLimit}
+                </div>
+                <div className="mt-2 flex items-center gap-1.5">
+                  <StateBadge state={org.state} />
+                  {org.isComped && <CompedBadge />}
+                  {org.hasStripeCustomer && <Badge variant="sky">Stripe</Badge>}
+                </div>
+                <div className="text-muted mt-3 flex items-center justify-between text-sm">
+                  <span>
+                    Members{" "}
+                    <span className="text-bark font-mono">
+                      {org.memberCount}
+                      <span className="text-muted/60">
+                        {" "}
+                        / {org.memberLimit === Infinity ? "∞" : org.memberLimit}
+                      </span>
+                    </span>
                   </span>
-                </TableCell>
-                <TableCell className="hidden text-muted md:table-cell">
-                  {org.state === "trialing" && org.trialEndsAt
-                    ? `ends ${trialEndDescriptor(org.trialEndsAt)}`
-                    : "—"}
-                </TableCell>
-                <TableCell className="hidden text-muted md:table-cell">
-                  {org.hasStripeCustomer ? (
-                    <Badge variant="sky">Stripe</Badge>
-                  ) : (
-                    "—"
+                  {org.state === "trialing" && org.trialEndsAt && (
+                    <span>ends {trialEndDescriptor(org.trialEndsAt)}</span>
                   )}
-                </TableCell>
-              </TableRow>
+                </div>
+              </div>
             ))}
-          </TableBody>
-        </Table>
+          </div>
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead>State</TableHead>
+                  <TableHead className="text-right">Members</TableHead>
+                  <TableHead>Trial</TableHead>
+                  <TableHead>Billing</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((org) => (
+                  <TableRow key={org.id}>
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/admin/organisations/${org.id}`}
+                        className="hover:text-terracotta"
+                      >
+                        {org.name}
+                      </Link>
+                      <span className="text-muted ml-2 font-mono text-xs">
+                        /{org.slug}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{org.plan}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <StateBadge state={org.state} />
+                        {org.isComped && <CompedBadge />}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted text-right font-mono">
+                      {org.memberCount}
+                      <span className="text-muted/60">
+                        {" "}
+                        / {org.memberLimit === Infinity ? "∞" : org.memberLimit}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-muted">
+                      {org.state === "trialing" && org.trialEndsAt
+                        ? `ends ${trialEndDescriptor(org.trialEndsAt)}`
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-muted">
+                      {org.hasStripeCustomer ? (
+                        <Badge variant="sky">Stripe</Badge>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       <Pagination

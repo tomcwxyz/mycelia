@@ -19,69 +19,124 @@ export default async function AdminUsagePage() {
   return (
     <div className="stagger-children space-y-6">
       <div>
-        <h1 className="font-display text-4xl text-bark">Usage</h1>
-        <p className="mt-2 text-muted">
+        <h1 className="font-display text-bark text-4xl">Usage</h1>
+        <p className="text-muted mt-2">
           Each organisation against its plan limits. Moments count is this
           calendar month.
         </p>
       </div>
 
       {orgs.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-white/50 p-8 text-center text-muted">
+        <p className="border-border text-muted rounded-xl border border-dashed bg-white/50 p-8 text-center">
           No organisations yet.
         </p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Organisation</TableHead>
-              <TableHead className="hidden sm:table-cell">Plan</TableHead>
-              <TableHead>State</TableHead>
-              <TableHead>Members</TableHead>
-              <TableHead className="hidden lg:table-cell">
-                Connections
-              </TableHead>
-              <TableHead>Moments (mo)</TableHead>
-              <TableHead className="hidden lg:table-cell">Spaces</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <>
+          <div className="space-y-3 md:hidden">
             {orgs.map((org) => (
-              <TableRow key={org.id}>
-                <TableCell className="font-medium">
-                  {org.name}
-                  <span className="ml-2 font-mono text-xs text-muted">
-                    /{org.slug}
-                  </span>
-                </TableCell>
-                <TableCell className="hidden sm:table-cell">
+              <div
+                key={org.id}
+                className="border-border shadow-lift rounded-xl border bg-white/80 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="text-bark font-medium">
+                    {org.name}
+                    <span className="text-muted ml-2 font-mono text-xs">
+                      /{org.slug}
+                    </span>
+                  </div>
                   <Badge variant="outline">{org.plan}</Badge>
-                </TableCell>
-                <TableCell>
+                </div>
+                <div className="mt-2">
                   <StateBadge state={org.state} />
-                </TableCell>
-                <TableCell>
-                  <UsageMeter used={org.members} limit={org.limits.users} />
-                </TableCell>
-                <TableCell className="hidden lg:table-cell">
-                  <UsageMeter
-                    used={org.connections}
-                    limit={org.limits.connections}
-                  />
-                </TableCell>
-                <TableCell>
-                  <UsageMeter
-                    used={org.momentsThisMonth}
-                    limit={org.limits.momentsPerMonth}
-                  />
-                </TableCell>
-                <TableCell className="hidden lg:table-cell">
-                  <UsageMeter used={org.spaces} limit={org.limits.spaces} />
-                </TableCell>
-              </TableRow>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-muted mb-1 text-xs tracking-[0.08em] uppercase">
+                      Members
+                    </div>
+                    <UsageMeter used={org.members} limit={org.limits.users} />
+                  </div>
+                  <div>
+                    <div className="text-muted mb-1 text-xs tracking-[0.08em] uppercase">
+                      Connections
+                    </div>
+                    <UsageMeter
+                      used={org.connections}
+                      limit={org.limits.connections}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-muted mb-1 text-xs tracking-[0.08em] uppercase">
+                      Moments (mo)
+                    </div>
+                    <UsageMeter
+                      used={org.momentsThisMonth}
+                      limit={org.limits.momentsPerMonth}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-muted mb-1 text-xs tracking-[0.08em] uppercase">
+                      Spaces
+                    </div>
+                    <UsageMeter used={org.spaces} limit={org.limits.spaces} />
+                  </div>
+                </div>
+              </div>
             ))}
-          </TableBody>
-        </Table>
+          </div>
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Organisation</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead>State</TableHead>
+                  <TableHead>Members</TableHead>
+                  <TableHead>Connections</TableHead>
+                  <TableHead>Moments (mo)</TableHead>
+                  <TableHead>Spaces</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orgs.map((org) => (
+                  <TableRow key={org.id}>
+                    <TableCell className="font-medium">
+                      {org.name}
+                      <span className="text-muted ml-2 font-mono text-xs">
+                        /{org.slug}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{org.plan}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <StateBadge state={org.state} />
+                    </TableCell>
+                    <TableCell>
+                      <UsageMeter used={org.members} limit={org.limits.users} />
+                    </TableCell>
+                    <TableCell>
+                      <UsageMeter
+                        used={org.connections}
+                        limit={org.limits.connections}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <UsageMeter
+                        used={org.momentsThisMonth}
+                        limit={org.limits.momentsPerMonth}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <UsageMeter used={org.spaces} limit={org.limits.spaces} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
     </div>
   );
