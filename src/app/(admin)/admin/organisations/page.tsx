@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { getOrganisationsPage } from "@/lib/admin/organisations";
-import { StateBadge } from "@/components/admin/billing-badges";
+import { StateBadge, CompedBadge } from "@/components/admin/billing-badges";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -71,7 +72,12 @@ export default async function AdminOrganisationsPage({
             {rows.map((org) => (
               <TableRow key={org.id}>
                 <TableCell className="font-medium">
-                  {org.name}
+                  <Link
+                    href={`/admin/organisations/${org.id}`}
+                    className="hover:text-terracotta"
+                  >
+                    {org.name}
+                  </Link>
                   <span className="ml-2 font-mono text-xs text-muted">
                     /{org.slug}
                   </span>
@@ -80,7 +86,10 @@ export default async function AdminOrganisationsPage({
                   <Badge variant="outline">{org.plan}</Badge>
                 </TableCell>
                 <TableCell>
-                  <StateBadge state={org.state} />
+                  <div className="flex items-center gap-1.5">
+                    <StateBadge state={org.state} />
+                    {org.isComped && <CompedBadge />}
+                  </div>
                 </TableCell>
                 <TableCell className="hidden text-right font-mono text-muted sm:table-cell">
                   {org.memberCount}

@@ -11,3 +11,7 @@ export const suspendUserSchema = z.object({
 export const deleteUserSchema = z.object({
   confirmEmail: z.string().email(),
 });
+
+export const grantSubscriptionSchema = z.object({
+  grant: z.boolean(),
+});

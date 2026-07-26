@@ -17,6 +17,8 @@ export interface AdminOrgRow {
   state: SubscriptionState;
   trialEndsAt: Date | null;
   hasStripeCustomer: boolean;
+  /** Active, but not backed by a real Stripe subscription — an admin grant. */
+  isComped: boolean;
   memberCount: number;
   memberLimit: number;
   createdAt: Date;
@@ -75,14 +77,17 @@ export async function getOrganisationsPage({
   return {
     rows: rows.map((row) => {
       const plan = row.plan as PlanType;
+      const state = subscriptionState(row);
+      const hasStripeCustomer = Boolean(row.stripeCustomerId);
       return {
         id: row.id,
         name: row.name,
         slug: row.slug,
         plan,
-        state: subscriptionState(row),
+        state,
         trialEndsAt: row.trialEndsAt,
-        hasStripeCustomer: Boolean(row.stripeCustomerId),
+        hasStripeCustomer,
+        isComped: state === "active" && !hasStripeCustomer,
         memberCount: Number(row.memberCount),
         memberLimit: PLAN_LIMITS[plan].users,
         createdAt: row.createdAt,

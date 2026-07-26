@@ -2,19 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getUserDetail } from "@/lib/admin/user-detail";
-import { RoleBadge, UserStatusBadge } from "@/components/admin/billing-badges";
+import {
+  RoleBadge,
+  UserStatusBadge,
+  ORG_ROLE_VARIANT,
+} from "@/components/admin/billing-badges";
 import { UserActions } from "@/components/admin/user-actions";
-import { Badge, type BadgeProps } from "@/components/ui/badge";
-import type { OrgRole } from "@/lib/auth/permissions";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
-
-const ORG_ROLE_VARIANT: Record<OrgRole, BadgeProps["variant"]> = {
-  owner: "amber",
-  admin: "default",
-  contributor: "moss",
-  viewer: "sky",
-};
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("en-GB", {
