@@ -33,5 +33,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npx tsc --noEmit
+      # The repo tsconfig currently targets ES2017 while an existing unrelated
+      # test uses the RegExp dotAll flag (ES2018). Keep that config cleanup out
+      # of this pilot while still typechecking the complete tree.
+      - run: npx tsc --noEmit --target ES2018
       - run: npm test
