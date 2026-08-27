@@ -52,3 +52,34 @@ documentation (mkdocs).
 ## Pricing
 
 Flat £5/month, everything included, 30-day free trial, no card required.
+
+
+## Google Calendar pilot configuration
+
+The Calendar context pilot requires these deployment variables:
+
+```env
+NEXT_PUBLIC_APP_URL=https://<stable-tending-pilot-host>
+GOOGLE_CONTEXT_CLIENT_ID=
+GOOGLE_CONTEXT_CLIENT_SECRET=
+CONTEXT_OAUTH_STATE_SECRET=
+CONTEXT_ENCRYPTION_KEY=
+```
+
+`CONTEXT_OAUTH_STATE_SECRET` must be at least 32 characters.
+
+`CONTEXT_ENCRYPTION_KEY` must be a base64-encoded 32-byte key.
+
+In Google Cloud, enable the Google Calendar API and create an OAuth 2.0
+**Web application** client. Its authorised redirect URI must exactly equal:
+
+```text
+<NEXT_PUBLIC_APP_URL>/api/context/google/callback
+```
+
+The pilot requests `openid`, `email`, and
+`https://www.googleapis.com/auth/calendar.events.readonly`.
+
+For Vercel preview testing, make the variables available to the Preview
+environment and use a stable preview/branch alias for `NEXT_PUBLIC_APP_URL`,
+not an ephemeral per-deployment URL.
