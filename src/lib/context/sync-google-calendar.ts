@@ -23,7 +23,7 @@ const REFRESH_MARGIN_MS = 60_000;
 
 type ContextSourceRow = typeof contextSources.$inferSelect;
 
-async function freshGoogleCredentials(source: ContextSourceRow) {
+export async function freshGoogleCredentials(source: ContextSourceRow) {
   let credentials = decryptContextCredentials<GoogleContextCredentials>(
     source.credentialsEncrypted,
   );
