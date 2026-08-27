@@ -10,6 +10,7 @@ export interface ApiContext {
   organisationId: string;
   scope: ApiScope;
   keyId: string;
+  createdByEmail: string;
 }
 
 // Fixed-window rate limit applied per API key.
@@ -81,6 +82,7 @@ export async function getApiContext(
     organisationId: key.organisationId,
     scope: key.scope,
     keyId: key.id,
+    createdByEmail: key.createdByEmail,
   };
 }
 
