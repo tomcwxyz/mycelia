@@ -15,9 +15,17 @@ export interface ContextActorMatch {
   matchedValue: string;
 }
 
+export interface ContextMentionMatch {
+  connectionId: string;
+  connectionName: string;
+  matchedBy: "calendar_text";
+  matchedValue: string;
+}
+
 export interface ContextIdentityMatchResult {
   matched: ContextActorMatch[];
   unmatched: ContextActor[];
+  relatedContext: ContextMentionMatch[];
 }
 
 function normaliseEmail(value: string | undefined) {
@@ -28,6 +36,45 @@ function normaliseEmail(value: string | undefined) {
 function actorEmail(actor: ContextActor) {
   const identity = actor.identities.find((item) => item.kind === "email");
   return normaliseEmail(identity?.value);
+}
+
+function normaliseMentionText(value: string | undefined) {
+  return value
+    ?.normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function mentionedConnectionNames(
+  event: ContextEvent,
+  connections: MatchableConnection[],
+  excludedConnectionIds: Set<string>,
+): ContextMentionMatch[] {
+  const haystack = normaliseMentionText(
+    [event.content.title, event.content.bodyPreview].filter(Boolean).join(" "),
+  );
+  if (!haystack) return [];
+
+  const paddedHaystack = " " + haystack + " ";
+  const related: ContextMentionMatch[] = [];
+
+  for (const connection of connections) {
+    if (excludedConnectionIds.has(connection.id)) continue;
+    const name = normaliseMentionText(connection.name);
+    if (!name || name.length < 3) continue;
+    if (!paddedHaystack.includes(" " + name + " ")) continue;
+
+    related.push({
+      connectionId: connection.id,
+      connectionName: connection.name,
+      matchedBy: "calendar_text",
+      matchedValue: connection.name,
+    });
+  }
+
+  return related;
 }
 
 /**
@@ -77,5 +124,9 @@ export function matchContextActorsToConnections(
     });
   }
 
-  return { matched, unmatched };
+  return {
+    matched,
+    unmatched,
+    relatedContext: mentionedConnectionNames(event, connections, seenConnections),
+  };
 }
