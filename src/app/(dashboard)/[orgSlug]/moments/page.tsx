@@ -13,6 +13,8 @@ import { and, eq, desc, inArray, asc, gte, lte } from "drizzle-orm";
 import { MomentList } from "@/components/moments/moment-list";
 import { MomentFilters } from "@/components/moments/moment-filters";
 import { ComposerTriggerBar } from "@/components/moments/composer-trigger-bar";
+import { auth } from "@/lib/auth";
+import { canPerform, getMembership, hasMinRole } from "@/lib/auth/permissions";
 
 export default async function MomentsPage({
   params,
@@ -37,6 +39,17 @@ export default async function MomentsPage({
     .limit(1);
 
   if (!org) return null;
+
+  const session = await auth();
+  const membership = session?.user?.id
+    ? await getMembership(session.user.id, org.id)
+    : null;
+  const canDeleteAnyMoment = membership
+    ? canPerform(membership, "DELETE_MOMENTS", "admin")
+    : false;
+  const canDeleteOwnMoment = membership
+    ? hasMinRole(membership.role, "contributor")
+    : false;
 
   const allSpaces = await db
     .select({ id: spaces.id, name: spaces.name })
@@ -168,7 +181,20 @@ export default async function MomentsPage({
         to={to}
       />
 
-      <MomentList moments={momentsWithConnections} orgSlug={orgSlug} />
+      <MomentList
+        moments={momentsWithConnections}
+        orgSlug={orgSlug}
+        organisationId={org.id}
+        deletableMomentIds={momentsWithConnections
+          .filter(
+            (moment) =>
+              canDeleteAnyMoment ||
+              (canDeleteOwnMoment &&
+                Boolean(session?.user?.id) &&
+                moment.authorId === session?.user?.id),
+          )
+          .map((moment) => moment.id)}
+      />
     </div>
   );
 }
