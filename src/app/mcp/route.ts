@@ -1,5 +1,8 @@
 import { NextRequest } from "next/server";
-import { getApiContext, apiErrorResponse } from "@/lib/api-keys/context";
+import { getApiContext, apiErrorResponse, type ApiContext } from "@/lib/api-keys/context";
+import { db } from "@/lib/db";
+import { organisations } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,6 +15,17 @@ type JsonRpcRequest = {
 };
 
 const tools = [
+  {
+    name: "tending_current_organisation",
+    description:
+      "Return the stable Tending organisation represented by this API key. Use for connection/resource discovery, not as relationship content.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true },
+  },
   {
     name: "tending_search_connections",
     description: "Search Tending relationships/connections. Use this first to resolve a person or organisation.",
@@ -173,8 +187,31 @@ function envelopeData(payload: unknown) {
   return "data" in payload ? (payload as { data: unknown }).data : payload;
 }
 
-async function callTool(request: Request, name: string, args: Record<string, unknown>) {
+async function callTool(
+  request: Request,
+  name: string,
+  args: Record<string, unknown>,
+  apiContext: ApiContext,
+) {
   switch (name) {
+    case "tending_current_organisation": {
+      const [organisation] = await db
+        .select({
+          id: organisations.id,
+          name: organisations.name,
+          slug: organisations.slug,
+        })
+        .from(organisations)
+        .where(eq(organisations.id, apiContext.organisationId))
+        .limit(1);
+      if (!organisation) throw new Error("Tending organisation not found");
+      return {
+        organisation: {
+          ...organisation,
+          url: new URL("/" + organisation.slug, request.url).toString(),
+        },
+      };
+    }
     case "tending_search_connections": {
       const limit = positiveInt(args.limit, 100, 200);
       const payload = await apiCall(request, `/api/v1/connections?limit=${limit}`);
@@ -237,10 +274,11 @@ async function callTool(request: Request, name: string, args: Record<string, unk
 }
 
 export async function POST(request: NextRequest) {
+  let apiContext: ApiContext;
   try {
     // MCP discovery requires a valid read-scoped Tending API key. Individual
     // API calls still enforce read_write where a tool performs a write.
-    await getApiContext(request, "read");
+    apiContext = await getApiContext(request, "read");
   } catch (error) {
     return apiErrorResponse(error);
   }
@@ -273,7 +311,7 @@ export async function POST(request: NextRequest) {
     const args = asRecord(params.arguments);
     if (!name) return rpcError(body.id, -32602, "Tool name is required");
     try {
-      const result = await callTool(request, name, args);
+      const result = await callTool(request, name, args, apiContext);
       return rpc(body.id, {
         content: [{ type: "text", text: JSON.stringify(result) }],
         structuredContent: result,
