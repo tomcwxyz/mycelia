@@ -250,6 +250,7 @@ async function callTool(
       const organisation = await organisationIdentity(request, apiContext);
       return {
         organisation,
+        collectionUrl: collectionUrl(request, organisation.slug, "connections"),
         data: data.map((row) => ({
           ...row,
           url: typeof row.id === "string"
