@@ -7,7 +7,6 @@ import {
   contextSources,
 } from "@/lib/db/schema";
 import { decryptContextCredentials, encryptContextCredentials } from "./crypto";
-import { deliverContextEventToSwells } from "./delivery";
 import {
   listGoogleCalendarEvents,
   refreshGoogleCalendarCredentials,
@@ -171,8 +170,6 @@ export async function syncGoogleCalendarSource(
   let eventsSeen = 0;
   let relevantEvents = 0;
   let candidatesCreated = 0;
-  let swellsDeliveries = 0;
-  let swellsDeliveryFailures = 0;
 
   do {
     const page = await listGoogleCalendarEvents(credentials.accessToken, {
@@ -192,17 +189,6 @@ export async function syncGoogleCalendarSource(
         ingestedAt: now,
       });
       if (event.type !== "meeting.held") continue;
-
-      // Pilot bridge only. A downstream consumer sees the same neutral event
-      // whether or not Tending recognises any relationship in it. Delivery is
-      // best-effort and can never make Calendar sync fail for Tending.
-      try {
-        const delivery = await deliverContextEventToSwells(event);
-        if (delivery.delivered) swellsDeliveries += 1;
-      } catch (deliveryError) {
-        swellsDeliveryFailures += 1;
-        console.error("Swells context delivery failed", event.id, deliveryError);
-      }
 
       const matches = matchContextActorsToConnections(event, orgConnections);
       const candidate = buildTendingRelationshipCandidate(event, matches);
@@ -240,8 +226,6 @@ export async function syncGoogleCalendarSource(
     eventsSeen,
     relevantEvents,
     candidatesCreated,
-    swellsDeliveries,
-    swellsDeliveryFailures,
     lastSyncedAt: now,
   };
 }
