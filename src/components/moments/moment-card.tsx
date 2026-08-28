@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ConnectionTypeBadge } from "@/components/ui/connection-type-badge";
+import { DeleteMomentButton } from "./delete-moment-button";
 
 interface MomentConnection {
   id: string;
@@ -23,12 +24,16 @@ interface MomentCardProps {
   };
   connections?: MomentConnection[];
   orgSlug: string;
+  organisationId?: string;
+  canDelete?: boolean;
 }
 
 export function MomentCard({
   moment,
   connections = [],
   orgSlug,
+  organisationId,
+  canDelete = false,
 }: MomentCardProps) {
   const displayDate = moment.eventDate ?? moment.createdAt;
 
@@ -51,7 +56,8 @@ export function MomentCard({
         </div>
       )}
 
-      <div className="text-muted mt-3 flex items-center gap-2 text-xs">
+      <div className="text-muted mt-3 flex items-center justify-between gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono">
           {displayDate.toLocaleDateString("en-GB", {
             day: "numeric",
@@ -67,6 +73,13 @@ export function MomentCard({
         {moment.author && (
           <span>&middot; {moment.author.name ?? moment.author.email}</span>
         )}
+        </div>
+        {canDelete && organisationId ? (
+          <DeleteMomentButton
+            momentId={moment.id}
+            organisationId={organisationId}
+          />
+        ) : null}
       </div>
     </div>
   );

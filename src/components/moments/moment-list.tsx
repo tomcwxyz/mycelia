@@ -24,9 +24,17 @@ interface Moment {
 interface MomentListProps {
   moments: Moment[];
   orgSlug: string;
+  organisationId?: string;
+  deletableMomentIds?: string[];
 }
 
-export function MomentList({ moments, orgSlug }: MomentListProps) {
+export function MomentList({
+  moments,
+  orgSlug,
+  organisationId,
+  deletableMomentIds = [],
+}: MomentListProps) {
+  const deletable = new Set(deletableMomentIds);
   if (moments.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-surface/60 p-8 text-center">
@@ -61,6 +69,8 @@ export function MomentList({ moments, orgSlug }: MomentListProps) {
               moment={moment}
               connections={moment.connections}
               orgSlug={orgSlug}
+              organisationId={organisationId}
+              canDelete={deletable.has(moment.id)}
             />
           </div>
         ))}

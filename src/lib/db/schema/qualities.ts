@@ -21,7 +21,9 @@ export const qualities = pgTable(
     position: real("position").notNull(),
     confidence: real("confidence").notNull().default(0.5),
     source: qualitySourceEnum("source").notNull().default("inferred"),
-    momentId: uuid("moment_id").references(() => moments.id),
+    momentId: uuid("moment_id").references(() => moments.id, {
+      onDelete: "cascade",
+    }),
     createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
       .notNull()
       .defaultNow(),

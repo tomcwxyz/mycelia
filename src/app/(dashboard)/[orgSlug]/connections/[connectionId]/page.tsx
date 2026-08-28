@@ -15,7 +15,7 @@ import {
 import { and, eq, desc, asc, inArray, ne, sql } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { hasMinRole } from "@/lib/auth/permissions";
+import { canPerform, hasMinRole } from "@/lib/auth/permissions";
 import { ConnectionTypeBadge } from "@/components/ui/connection-type-badge";
 import { AddMomentButton } from "@/components/moments/add-moment-button";
 import { MomentList } from "@/components/moments/moment-list";
@@ -58,7 +58,10 @@ export default async function ConnectionDetailPage({
   const session = await auth();
   const [membership] = session?.user?.id
     ? await db
-        .select({ role: organisationMemberships.role })
+        .select({
+          role: organisationMemberships.role,
+          permissions: organisationMemberships.permissions,
+        })
         .from(organisationMemberships)
         .where(
           and(
@@ -71,6 +74,9 @@ export default async function ConnectionDetailPage({
   const canEdit = membership
     ? hasMinRole(membership.role, "contributor")
     : false;
+  const canDeleteAnyMoment = membership
+    ? canPerform(membership, "DELETE_MOMENTS", "admin")
+    : false;
 
   // Get moments for this connection
   const connectionMoments = await db
@@ -80,6 +86,7 @@ export default async function ConnectionDetailPage({
       source: moments.source,
       createdAt: moments.createdAt,
       eventDate: moments.eventDate,
+      authorId: moments.authorId,
     })
     .from(momentConnections)
     .innerJoin(moments, eq(momentConnections.momentId, moments.id))
@@ -234,7 +241,20 @@ export default async function ConnectionDetailPage({
         <div>
           <h2 className="font-display text-bark text-xl">Moments together</h2>
           <div className="mt-4">
-            <MomentList moments={connectionMoments} orgSlug={orgSlug} />
+            <MomentList
+              moments={connectionMoments}
+              orgSlug={orgSlug}
+              organisationId={org.id}
+              deletableMomentIds={connectionMoments
+                .filter(
+                  (moment) =>
+                    canDeleteAnyMoment ||
+                    (canEdit &&
+                      Boolean(session?.user?.id) &&
+                      moment.authorId === session?.user?.id),
+                )
+                .map((moment) => moment.id)}
+            />
           </div>
         </div>
 
