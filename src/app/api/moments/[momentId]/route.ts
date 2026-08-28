@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { moments } from "@/lib/db/schema";
+import { deleteMomentAndDerivedState } from "@/lib/moments/delete";
 import { successResponse, errorResponse, getOrgContext } from "@/lib/utils/api";
 import { hasMinRole, canPerform } from "@/lib/auth/permissions";
 import { updateMomentSchema } from "@/lib/validators/moments";
@@ -83,22 +84,34 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    const { membership, organisationId } = await getOrgContext(request);
+    const { user, membership, organisationId } = await getOrgContext(request);
     const { momentId } = await params;
 
-    if (!canPerform(membership, "DELETE_MOMENTS", "admin")) {
-      return errorResponse("Forbidden", 403);
-    }
-
-    const [deleted] = await db
-      .delete(moments)
+    const [moment] = await db
+      .select({ id: moments.id, authorId: moments.authorId })
+      .from(moments)
       .where(
         and(
           eq(moments.id, momentId),
           eq(moments.organisationId, organisationId)
         )
       )
-      .returning({ id: moments.id });
+      .limit(1);
+
+    if (!moment) return errorResponse("Moment not found", 404);
+
+    const canDeleteAny = canPerform(membership, "DELETE_MOMENTS", "admin");
+    const canDeleteOwn =
+      hasMinRole(membership.role, "contributor") && moment.authorId === user.id;
+
+    if (!canDeleteAny && !canDeleteOwn) {
+      return errorResponse("Forbidden", 403);
+    }
+
+    const deleted = await deleteMomentAndDerivedState(
+      organisationId,
+      momentId,
+    );
 
     if (!deleted) return errorResponse("Moment not found", 404);
 
