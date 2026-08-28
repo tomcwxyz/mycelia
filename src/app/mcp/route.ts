@@ -187,6 +187,39 @@ function envelopeData(payload: unknown) {
   return "data" in payload ? (payload as { data: unknown }).data : payload;
 }
 
+async function organisationIdentity(
+  request: Request,
+  apiContext: ApiContext,
+) {
+  const [organisation] = await db
+    .select({
+      id: organisations.id,
+      name: organisations.name,
+      slug: organisations.slug,
+    })
+    .from(organisations)
+    .where(eq(organisations.id, apiContext.organisationId))
+    .limit(1);
+
+  if (!organisation) throw new Error("Tending organisation not found");
+
+  return {
+    ...organisation,
+    url: new URL("/" + organisation.slug, request.url).toString(),
+  };
+}
+
+function connectionUrl(request: Request, orgSlug: string, connectionId: string) {
+  return new URL(
+    "/" + orgSlug + "/connections/" + encodeURIComponent(connectionId),
+    request.url,
+  ).toString();
+}
+
+function collectionUrl(request: Request, orgSlug: string, collection: string) {
+  return new URL("/" + orgSlug + "/" + collection, request.url).toString();
+}
+
 async function callTool(
   request: Request,
   name: string,
@@ -194,24 +227,8 @@ async function callTool(
   apiContext: ApiContext,
 ) {
   switch (name) {
-    case "tending_current_organisation": {
-      const [organisation] = await db
-        .select({
-          id: organisations.id,
-          name: organisations.name,
-          slug: organisations.slug,
-        })
-        .from(organisations)
-        .where(eq(organisations.id, apiContext.organisationId))
-        .limit(1);
-      if (!organisation) throw new Error("Tending organisation not found");
-      return {
-        organisation: {
-          ...organisation,
-          url: new URL("/" + organisation.slug, request.url).toString(),
-        },
-      };
-    }
+    case "tending_current_organisation":
+      return { organisation: await organisationIdentity(request, apiContext) };
     case "tending_search_connections": {
       const limit = positiveInt(args.limit, 100, 200);
       const payload = await apiCall(request, `/api/v1/connections?limit=${limit}`);
@@ -230,10 +247,20 @@ async function callTool(
               .some((value) => String(value).toLowerCase().includes(query));
           })
         : rows;
-      return { data };
+      const organisation = await organisationIdentity(request, apiContext);
+      return {
+        organisation,
+        collectionUrl: collectionUrl(request, organisation.slug, "connections"),
+        data: data.map((row) => ({
+          ...row,
+          url: typeof row.id === "string"
+            ? connectionUrl(request, organisation.slug, row.id)
+            : undefined,
+        })),
+      };
     }
-    case "tending_create_connection":
-      return apiCall(request, "/api/v1/connections", {
+    case "tending_create_connection": {
+      const payload = await apiCall(request, "/api/v1/connections", {
         method: "POST",
         body: JSON.stringify({
           name: args.name,
@@ -241,19 +268,66 @@ async function callTool(
           ...(args.contactDetails !== undefined ? { contactDetails: args.contactDetails } : {}),
         }),
       });
+      const created = envelopeData(payload);
+      const organisation = await organisationIdentity(request, apiContext);
+      if (!created || typeof created !== "object" || Array.isArray(created)) {
+        return { organisation, data: created };
+      }
+      const record = created as Record<string, unknown>;
+      return {
+        organisation,
+        data: {
+          ...record,
+          url: typeof record.id === "string"
+            ? connectionUrl(request, organisation.slug, record.id)
+            : undefined,
+        },
+      };
+    }
     case "tending_get_relationship_context": {
       if (typeof args.connectionId !== "string" || !args.connectionId) throw new Error("connectionId is required");
-      return apiCall(
+      const payload = await apiCall(
         request,
         `/api/v1/connections/${encodeURIComponent(args.connectionId)}/context?limit=${positiveInt(args.limit, 30, 100)}`,
       );
+      const data = envelopeData(payload);
+      const organisation = await organisationIdentity(request, apiContext);
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        return { organisation, data };
+      }
+      const record = data as Record<string, unknown>;
+      const connection = record.connection && typeof record.connection === "object" && !Array.isArray(record.connection)
+        ? record.connection as Record<string, unknown>
+        : {};
+      return {
+        ...record,
+        organisation,
+        connection: {
+          ...connection,
+          url: connectionUrl(request, organisation.slug, args.connectionId),
+        },
+      };
     }
-    case "tending_recent_moments":
-      return apiCall(request, `/api/v1/moments?limit=${positiveInt(args.limit, 30, 100)}`);
-    case "tending_recent_observations":
-      return apiCall(request, `/api/v1/observations?limit=${positiveInt(args.limit, 30, 100)}`);
-    case "tending_create_moment":
-      return apiCall(request, "/api/v1/moments", {
+    case "tending_recent_moments": {
+      const payload = await apiCall(request, `/api/v1/moments?limit=${positiveInt(args.limit, 30, 100)}`);
+      const organisation = await organisationIdentity(request, apiContext);
+      return {
+        organisation,
+        collectionUrl: collectionUrl(request, organisation.slug, "moments"),
+        data: envelopeData(payload),
+      };
+    }
+    case "tending_recent_observations": {
+      const payload = await apiCall(request, `/api/v1/observations?limit=${positiveInt(args.limit, 30, 100)}`);
+      const organisation = await organisationIdentity(request, apiContext);
+      return {
+        organisation,
+        collectionUrl: collectionUrl(request, organisation.slug, "observations"),
+        data: envelopeData(payload),
+      };
+    }
+    case "tending_create_moment": {
+      const payload = await apiCall(request, "/api/v1/moments", {
         method: "POST",
         body: JSON.stringify({
           content: args.content,
@@ -261,6 +335,13 @@ async function callTool(
           ...(args.eventDate !== undefined ? { eventDate: args.eventDate } : {}),
         }),
       });
+      const organisation = await organisationIdentity(request, apiContext);
+      return {
+        organisation,
+        collectionUrl: collectionUrl(request, organisation.slug, "moments"),
+        data: envelopeData(payload),
+      };
+    }
     case "calendar_find_events": {
       const params = new URLSearchParams({ limit: String(positiveInt(args.limit, 30, 100)) });
       if (typeof args.from === "string" && args.from) params.set("from", args.from);
