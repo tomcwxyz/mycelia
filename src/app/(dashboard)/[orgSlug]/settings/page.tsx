@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
-import { organisations } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { contextSources, organisations } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getMembership, hasMinRole } from "@/lib/auth/permissions";
@@ -10,6 +10,7 @@ import { OrgSettingsForm } from "@/components/organisations/org-settings-form";
 import { NewConnectionSuggestionsToggle } from "@/components/organisations/new-connection-suggestions-toggle";
 import { ClearDemoData } from "@/components/organisations/clear-demo-data";
 import { ExportButton } from "@/components/export/export-button";
+import { GoogleCalendarConnection } from "@/components/context/google-calendar-connection";
 
 export default async function SettingsPage({
   params,
@@ -36,6 +37,29 @@ export default async function SettingsPage({
     ? hasMinRole(membership.role, "admin")
     : false;
   const canExportOrg = canManageSettings;
+  const canConnectContext = membership
+    ? hasMinRole(membership.role, "contributor")
+    : false;
+
+  const [googleCalendarSource] =
+    session?.user?.id && canConnectContext
+      ? await db
+          .select({
+            id: contextSources.id,
+            label: contextSources.label,
+            lastSyncedAt: contextSources.lastSyncedAt,
+          })
+          .from(contextSources)
+          .where(
+            and(
+              eq(contextSources.organisationId, org.id),
+              eq(contextSources.userId, session.user.id),
+              eq(contextSources.provider, "google_calendar"),
+              eq(contextSources.status, "active"),
+            ),
+          )
+          .limit(1)
+      : [];
 
   const newConnectionSuggestions =
     (org.settings as { newConnectionSuggestions?: "opt_in" | "opt_out" } | null)
@@ -56,6 +80,23 @@ export default async function SettingsPage({
         <NewConnectionSuggestionsToggle
           organisationId={org.id}
           value={newConnectionSuggestions}
+        />
+      )}
+
+      {canConnectContext && (
+        <GoogleCalendarConnection
+          organisationId={org.id}
+          orgSlug={orgSlug}
+          source={
+            googleCalendarSource
+              ? {
+                  id: googleCalendarSource.id,
+                  label: googleCalendarSource.label,
+                  lastSyncedAt:
+                    googleCalendarSource.lastSyncedAt?.toISOString() ?? null,
+                }
+              : null
+          }
         />
       )}
 

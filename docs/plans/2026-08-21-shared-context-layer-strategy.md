@@ -7,6 +7,25 @@
 > Later sources: Slack / Teams, ClickUp, CRM systems such as HubSpot / Salesforce / Lamplight
 > Related Tending plans: `2026-07-13-channel-capture-spec.md`, `2026-07-09-api-v1.md`, `2026-07-09-webhooks.md`
 
+### Implementation note — 27 August 2026
+
+The first Calendar/Attention slice is now implemented on the pilot branch:
+
+- Google Calendar remains connected and credentialled in Tending.
+- `GET /api/v1/calendar/events` exposes bounded, minimised ContextEvent-shaped
+  calendar context to scoped API clients.
+- Tending exposes product-native Streamable HTTP MCP at `/mcp`, including
+  relationship tools and `calendar_find_events`.
+- The Attention cloud agent now consumes Tending, Swells and Glade through
+  their product-native remote MCP endpoints by default.
+- Calendar is treated as transient evidence in Attention; it does not become a
+  Moment, Observation or action merely because an event exists.
+- Direct product APIs remain a diagnostic fallback rather than the primary
+  cloud transport.
+
+This implements the capability/event distinction described in this plan:
+MCP answers *what can I read or do?* while ContextEvent answers *what happened?*
+
 ## 1. Summary
 
 Tending works as a product. The next question is not whether it needs more features inside Tending, but whether it can become more useful by sitting alongside the tools where relationships and work already happen.
