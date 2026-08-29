@@ -143,15 +143,41 @@ export function ContextConnections({
       });
       const body = (await response.json()) as {
         error?: string;
-        data?: { candidatesCreated?: number };
+        data?: {
+          candidatesCreated?: number;
+          messagesSeen?: number;
+          relevantMessages?: number;
+          eventsSeen?: number;
+          relevantEvents?: number;
+          matchedRelationships?: number;
+          relationshipsWithEmail?: number;
+        };
       };
       if (!response.ok) throw new Error(body.error ?? "Connection check failed");
+
       const count = body.data?.candidatesCreated ?? 0;
-      setMessage(
-        count === 0
-          ? "Checked. Nothing new needs relationship review."
-          : `${count} new ${count === 1 ? "prompt is" : "prompts are"} ready to review.`,
-      );
+      const seen = body.data?.messagesSeen ?? body.data?.eventsSeen ?? 0;
+      const relevant = body.data?.relevantMessages ?? body.data?.relevantEvents ?? 0;
+      const matched = body.data?.matchedRelationships ?? 0;
+      const relationshipsWithEmail = body.data?.relationshipsWithEmail ?? 0;
+
+      if (count > 0) {
+        setMessage(
+          `Checked ${seen} ${source.provider === "gmail" ? "emails" : "calendar events"}. ${relevant} matched known relationships and ${count} new ${count === 1 ? "prompt is" : "prompts are"} ready to review.`,
+        );
+      } else if (seen === 0) {
+        setMessage(
+          `Checked successfully, but no ${source.provider === "gmail" ? "recent emails" : "recent calendar events"} were returned.`,
+        );
+      } else if (relevant === 0) {
+        setMessage(
+          `Checked ${seen} ${source.provider === "gmail" ? "emails" : "calendar events"}. None matched a known Tending relationship by email. ${relationshipsWithEmail} relationships currently have an email address available for matching.`,
+        );
+      } else {
+        setMessage(
+          `Checked ${seen} ${source.provider === "gmail" ? "emails" : "calendar events"}. ${relevant} matched ${matched} known ${matched === 1 ? "relationship" : "relationships"}, but there were no new review prompts.`,
+        );
+      }
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Connection check failed");
@@ -290,7 +316,7 @@ export function ContextConnections({
                   ))}
                   {provider.id === "clickup" && provider.connectPath && (
                     <Button asChild variant="ghost" size="sm">
-                      <Link href={connectHref(provider.connectPath)}>
+                      <Link prefetch={false} href={connectHref(provider.connectPath)}>
                         Change authorised Workspaces
                       </Link>
                     </Button>
@@ -299,7 +325,7 @@ export function ContextConnections({
               ) : provider.connectKind === "redirect" && provider.connectPath ? (
                 <div className="mt-4">
                   <Button asChild size="sm">
-                    <Link href={connectHref(provider.connectPath)}>
+                    <Link prefetch={false} href={connectHref(provider.connectPath)}>
                       {provider.connectLabel}
                     </Link>
                   </Button>
