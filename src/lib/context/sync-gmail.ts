@@ -158,6 +158,10 @@ export async function syncGmailSource(
     maxResults: MAX_MESSAGES,
   });
 
+  const relationshipsWithEmail = orgConnections.filter(
+    (connection) => Boolean(connection.contactDetails?.email?.trim()),
+  ).length;
+  const matchedRelationshipIds = new Set<string>();
   let messagesSeen = 0;
   let relevantMessages = 0;
   let candidatesCreated = 0;
@@ -179,6 +183,9 @@ export async function syncGmailSource(
     if (!candidate) continue;
 
     relevantMessages += 1;
+    for (const connectionId of candidate.connectionIds) {
+      matchedRelationshipIds.add(connectionId);
+    }
     const stored = await upsertEvent(source, event);
     if (await upsertCandidate(source, stored.id, candidate)) {
       candidatesCreated += 1;
@@ -201,10 +208,22 @@ export async function syncGmailSource(
       ),
     );
 
-  return {
+  const result = {
     messagesSeen,
     relevantMessages,
+    matchedRelationships: matchedRelationshipIds.size,
+    relationshipsWithEmail,
     candidatesCreated,
     lastSyncedAt: now,
   };
+
+  console.info("Gmail relationship sync completed", {
+    messagesSeen: result.messagesSeen,
+    relevantMessages: result.relevantMessages,
+    matchedRelationships: result.matchedRelationships,
+    relationshipsWithEmail: result.relationshipsWithEmail,
+    candidatesCreated: result.candidatesCreated,
+  });
+
+  return result;
 }
