@@ -10,7 +10,7 @@ import { OrgSettingsForm } from "@/components/organisations/org-settings-form";
 import { NewConnectionSuggestionsToggle } from "@/components/organisations/new-connection-suggestions-toggle";
 import { ClearDemoData } from "@/components/organisations/clear-demo-data";
 import { ExportButton } from "@/components/export/export-button";
-import { GoogleCalendarConnection } from "@/components/context/google-calendar-connection";
+import { ContextConnections } from "@/components/context/context-connections";
 
 export default async function SettingsPage({
   params,
@@ -41,11 +41,12 @@ export default async function SettingsPage({
     ? hasMinRole(membership.role, "contributor")
     : false;
 
-  const [googleCalendarSource] =
+  const relationshipContextSources =
     session?.user?.id && canConnectContext
       ? await db
           .select({
             id: contextSources.id,
+            provider: contextSources.provider,
             label: contextSources.label,
             lastSyncedAt: contextSources.lastSyncedAt,
           })
@@ -54,11 +55,9 @@ export default async function SettingsPage({
             and(
               eq(contextSources.organisationId, org.id),
               eq(contextSources.userId, session.user.id),
-              eq(contextSources.provider, "google_calendar"),
               eq(contextSources.status, "active"),
             ),
           )
-          .limit(1)
       : [];
 
   const newConnectionSuggestions =
@@ -84,19 +83,15 @@ export default async function SettingsPage({
       )}
 
       {canConnectContext && (
-        <GoogleCalendarConnection
+        <ContextConnections
           organisationId={org.id}
           orgSlug={orgSlug}
-          source={
-            googleCalendarSource
-              ? {
-                  id: googleCalendarSource.id,
-                  label: googleCalendarSource.label,
-                  lastSyncedAt:
-                    googleCalendarSource.lastSyncedAt?.toISOString() ?? null,
-                }
-              : null
-          }
+          sources={relationshipContextSources.map((source) => ({
+            id: source.id,
+            provider: source.provider,
+            label: source.label,
+            lastSyncedAt: source.lastSyncedAt?.toISOString() ?? null,
+          }))}
         />
       )}
 

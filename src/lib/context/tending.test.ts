@@ -47,6 +47,7 @@ describe("buildTendingRelationshipCandidate", () => {
         },
       ],
       unmatched: [],
+      relatedContext: [],
     });
 
     expect(candidate).toMatchObject({
@@ -64,6 +65,7 @@ describe("buildTendingRelationshipCandidate", () => {
       buildTendingRelationshipCandidate(event, {
         matched: [],
         unmatched: [],
+        relatedContext: [],
       }),
     ).toBeNull();
   });
@@ -83,6 +85,7 @@ describe("buildTendingRelationshipCandidate", () => {
             },
           ],
           unmatched: [],
+          relatedContext: [],
         },
       ),
     ).toBeNull();
