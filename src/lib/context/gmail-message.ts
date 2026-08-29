@@ -10,7 +10,7 @@ function header(part: GmailPart | undefined, name: string) {
 function parseMailbox(value: string) {
   const angle = value.match(/^(.*)<([^>]+)>$/);
   const email = (angle?.[2] ?? value).trim().toLowerCase();
-  if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) return undefined;
+  if (!/^[^@\s]+@[^@\s]+\\.[^@\s]+$/.test(email)) return undefined;
   const rawName = angle?.[1]?.trim().replace(/^["']|["']$/g, "");
   return {
     email,
@@ -41,17 +41,17 @@ function flatten(part: GmailPart | undefined): GmailPart[] {
 
 function stripHtml(value: string) {
   return value
-    .replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style>/gi, " ")
-    .replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi, " ")
-    .replace(/<br\\s*\\/?>/gi, "\\n")
-    .replace(/<\\/p>/gi, "\\n")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
-    .replace(/[ \\t]+/g, " ")
-    .replace(/\\n{3,}/g, "\\n\\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
@@ -68,7 +68,7 @@ function bodyPreview(message: GmailMessageLike, limit = 1600) {
     : html
       ? stripHtml(decode(html.body?.data))
       : message.snippet ?? "";
-  return value.replace(/\\s+/g, " ").trim().slice(0, limit);
+  return value.replace(/\s+/g, " ").trim().slice(0, limit);
 }
 
 function attachments(message: GmailMessageLike) {
