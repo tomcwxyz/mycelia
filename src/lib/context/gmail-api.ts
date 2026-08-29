@@ -85,6 +85,35 @@ async function parse<T>(response: Response): Promise<T> {
   return JSON.parse(body) as T;
 }
 
+function retryDelay(response: Response, attempt: number) {
+  const retryAfter = Number(response.headers.get("retry-after"));
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    return Math.min(retryAfter * 1000, 5000);
+  }
+  return [250, 750, 1500][attempt] ?? 1500;
+}
+
+async function gmailFetch(
+  url: URL,
+  accessToken: string,
+  attempt = 0,
+): Promise<Response> {
+  const response = await fetch(url, {
+    headers: { authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+
+  if (
+    attempt < 3
+    && (response.status === 429 || response.status === 500 || response.status === 503)
+  ) {
+    await new Promise((resolve) => setTimeout(resolve, retryDelay(response, attempt)));
+    return gmailFetch(url, accessToken, attempt + 1);
+  }
+
+  return response;
+}
+
 function credentials(
   token: GoogleTokenResponse,
   previousRefreshToken?: string,
@@ -154,10 +183,7 @@ export async function listRecentGmailMessageIds(
   url.searchParams.set("maxResults", String(options.maxResults));
   const result = await parse<{
     messages?: Array<{ id?: string }>;
-  }>(await fetch(url, {
-    headers: { authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  }));
+  }>(await gmailFetch(url, accessToken));
   return (result.messages ?? []).flatMap((item) => item.id ? [item.id] : []);
 }
 
@@ -169,8 +195,5 @@ export async function getGmailMessage(
     `${GMAIL_API}/users/me/messages/${encodeURIComponent(messageId)}`,
   );
   url.searchParams.set("format", "full");
-  return parse<GmailMessageLike>(await fetch(url, {
-    headers: { authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  }));
+  return parse<GmailMessageLike>(await gmailFetch(url, accessToken));
 }

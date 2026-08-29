@@ -166,6 +166,10 @@ export async function syncGoogleCalendarSource(
   timeMin.setUTCDate(timeMin.getUTCDate() - LOOKBACK_DAYS);
   const timeMax = new Date(now);
 
+  const relationshipsWithEmail = orgConnections.filter(
+    (connection) => Boolean(connection.contactDetails?.email?.trim()),
+  ).length;
+  const matchedRelationshipIds = new Set<string>();
   let pageToken: string | undefined;
   let eventsSeen = 0;
   let relevantEvents = 0;
@@ -194,6 +198,9 @@ export async function syncGoogleCalendarSource(
       const candidate = buildTendingRelationshipCandidate(event, matches);
       if (!candidate) continue;
       relevantEvents += 1;
+      for (const connectionId of candidate.connectionIds) {
+        matchedRelationshipIds.add(connectionId);
+      }
 
       const storedEvent = await upsertEvent(source, event);
       if (await upsertTendingCandidate(source, storedEvent.id, candidate)) {
@@ -222,10 +229,22 @@ export async function syncGoogleCalendarSource(
       ),
     );
 
-  return {
+  const result = {
     eventsSeen,
     relevantEvents,
+    matchedRelationships: matchedRelationshipIds.size,
+    relationshipsWithEmail,
     candidatesCreated,
     lastSyncedAt: now,
   };
+
+  console.info("Google Calendar relationship sync completed", {
+    eventsSeen: result.eventsSeen,
+    relevantEvents: result.relevantEvents,
+    matchedRelationships: result.matchedRelationships,
+    relationshipsWithEmail: result.relationshipsWithEmail,
+    candidatesCreated: result.candidatesCreated,
+  });
+
+  return result;
 }
