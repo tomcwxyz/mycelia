@@ -59,9 +59,12 @@ const providers: ProviderDefinition[] = [
     id: "slack",
     label: "Slack",
     description:
-      "Use selected conversations as relationship context, with anything worth keeping reviewed before it becomes a Moment.",
+      "Send individual Slack messages into relationship review from the message menu — no workspace history sync.",
     connectLabel: "Connect Slack",
-    connectKind: "future",
+    connectKind: "redirect",
+    connectPath: "/api/context/slack/connect",
+    connectedHelp:
+      "In Slack, choose More actions on a message, then Send to Tending. Only the message you choose is sent.",
   },
 ];
 
