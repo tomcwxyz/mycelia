@@ -18,6 +18,8 @@ export type ResendReceivedWebhook = {
 export type ResendReceivedEmail = {
   id: string;
   to: string[];
+  cc?: string[];
+  bcc?: string[];
   from: string;
   created_at: string;
   subject?: string;
