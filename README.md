@@ -54,17 +54,30 @@ documentation (mkdocs).
 Flat £5/month, everything included, 30-day free trial, no card required.
 
 
-## Google Calendar pilot configuration
+## Standalone relationship connections
 
-The Calendar context pilot requires these deployment variables:
+Tending can use selected external work systems as temporary relationship context without requiring Attention.
+
+Google Calendar:
 
 ```env
-NEXT_PUBLIC_APP_URL=https://<stable-tending-pilot-host>
+NEXT_PUBLIC_APP_URL=https://<stable-tending-host>
 GOOGLE_CONTEXT_CLIENT_ID=
 GOOGLE_CONTEXT_CLIENT_SECRET=
 CONTEXT_OAUTH_STATE_SECRET=
 CONTEXT_ENCRYPTION_KEY=
 ```
+
+ClickUp:
+
+```env
+CLICKUP_CONTEXT_CLIENT_ID=
+CLICKUP_CONTEXT_CLIENT_SECRET=
+```
+
+ClickUp uses OAuth and imports a bounded window of recent task activity from the Workspaces the user explicitly authorises. Only activity involving a deterministically matched Tending relationship is retained for review. It never creates Moments automatically and it does not write to ClickUp.
+
+Slack and email use the same context-source/review contract but their provider adapters are not enabled yet.
 
 `CONTEXT_OAUTH_STATE_SECRET` must be at least 32 characters.
 
@@ -82,4 +95,5 @@ The pilot requests `openid`, `email`, and
 
 For Vercel preview testing, make the variables available to the Preview
 environment and use a stable preview/branch alias for `NEXT_PUBLIC_APP_URL`,
-not an ephemeral per-deployment URL.
+not an ephemeral per-deployment URL. OAuth redirect URLs for Google and ClickUp
+must match the configured deployment URL exactly.
