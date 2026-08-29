@@ -117,5 +117,20 @@ export function buildTendingRelationshipCandidate(
     );
   }
 
+
+  if (event.type === "communication.slack_message_shared") {
+    const refs = connectionRefs(matches, true);
+    if (refs.length === 0) return null;
+    const people = peopleLabel(refs.map((ref) => ref.name));
+    return commonCandidate(
+      event,
+      refs,
+      `Worth remembering from this Slack message about ${people}?`,
+      refs.length === 1
+        ? `You deliberately sent this Slack message to Tending and it relates to ${people}. What, if anything, is actually worth remembering about the relationship?`
+        : `You deliberately sent this Slack message to Tending and it relates to ${people}. Is there anything worth keeping about these relationships?`,
+    );
+  }
+
   return null;
 }
