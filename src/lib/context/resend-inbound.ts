@@ -141,15 +141,19 @@ export function inboundTokenFromRecipients(recipients: string[]) {
 
 export function plainEmailPreview(email: ResendReceivedEmail, limit = 1600) {
   const source = email.text ?? email.html ?? "";
-  const withoutHtml = source
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
+  const plain = email.text
+    ? source
+    : source
+        .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+        .replace(/<[^>]+>/g, " ");
+
+  return plain
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/\s+/g, " ")
-    .trim();
-  return withoutHtml.slice(0, limit);
+    .trim()
+    .slice(0, limit);
 }
