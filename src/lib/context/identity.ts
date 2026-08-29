@@ -18,7 +18,7 @@ export interface ContextActorMatch {
 export interface ContextMentionMatch {
   connectionId: string;
   connectionName: string;
-  matchedBy: "calendar_text";
+  matchedBy: "content_name" | "content_email";
   matchedValue: string;
 }
 
@@ -47,21 +47,35 @@ function normaliseMentionText(value: string | undefined) {
     .trim();
 }
 
-function mentionedConnectionNames(
+function relatedConnectionsInContent(
   event: ContextEvent,
   connections: MatchableConnection[],
   excludedConnectionIds: Set<string>,
 ): ContextMentionMatch[] {
-  const haystack = normaliseMentionText(
-    [event.content.title, event.content.bodyPreview].filter(Boolean).join(" "),
-  );
-  if (!haystack) return [];
+  const rawHaystack = [event.content.title, event.content.bodyPreview]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  const normalisedHaystack = normaliseMentionText(rawHaystack);
+  if (!normalisedHaystack && !rawHaystack) return [];
 
-  const paddedHaystack = " " + haystack + " ";
+  const paddedHaystack = " " + (normalisedHaystack ?? "") + " ";
   const related: ContextMentionMatch[] = [];
 
   for (const connection of connections) {
     if (excludedConnectionIds.has(connection.id)) continue;
+
+    const email = normaliseEmail(connection.contactDetails?.email);
+    if (email && rawHaystack.includes(email)) {
+      related.push({
+        connectionId: connection.id,
+        connectionName: connection.name,
+        matchedBy: "content_email",
+        matchedValue: email,
+      });
+      continue;
+    }
+
     const name = normaliseMentionText(connection.name);
     if (!name || name.length < 3) continue;
     if (!paddedHaystack.includes(" " + name + " ")) continue;
@@ -69,7 +83,7 @@ function mentionedConnectionNames(
     related.push({
       connectionId: connection.id,
       connectionName: connection.name,
-      matchedBy: "calendar_text",
+      matchedBy: "content_name",
       matchedValue: connection.name,
     });
   }
@@ -80,9 +94,10 @@ function mentionedConnectionNames(
 /**
  * Deterministic identity matching for context events.
  *
- * For the first pilot we only trust exact email matches. We deliberately do
- * not use fuzzy names here: a wrong automatic relationship link is more
- * damaging than asking the user to resolve an unmatched participant later.
+ * Actor identities are matched only by exact email. Separately, source content
+ * may point at a known relationship through an exact email address or exact
+ * normalised connection name. That second signal is kept distinct so each
+ * product/source can decide whether it is trustworthy enough to act on.
  */
 export function matchContextActorsToConnections(
   event: ContextEvent,
@@ -110,8 +125,6 @@ export function matchContextActorsToConnections(
       continue;
     }
 
-    // A calendar event can mention the same person more than once. One
-    // connection should only contribute one relationship candidate.
     if (seenConnections.has(connection.id)) continue;
     seenConnections.add(connection.id);
 
@@ -127,6 +140,10 @@ export function matchContextActorsToConnections(
   return {
     matched,
     unmatched,
-    relatedContext: mentionedConnectionNames(event, connections, seenConnections),
+    relatedContext: relatedConnectionsInContent(
+      event,
+      connections,
+      seenConnections,
+    ),
   };
 }
