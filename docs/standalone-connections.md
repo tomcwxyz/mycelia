@@ -56,9 +56,44 @@ https://<tending-host>/api/context/clickup/callback
 
 Tending does not write to ClickUp.
 
-## Email
+## Gmail
 
-Email starts with deliberate forwarding/BCC rather than Gmail or Microsoft mailbox access.
+Gmail is an optional bounded mailbox connection for relationship context. It uses
+the same Google OAuth client configuration as Calendar, with an additional
+read-only Gmail scope.
+
+Redirect:
+
+```text
+https://<tending-host>/api/context/gmail/callback
+```
+
+Enable the Gmail API in the Google Cloud project used for the OAuth client.
+
+Tending checks at most the most recent 50 messages from the previous 14 days.
+For each message it keeps only:
+
+- subject;
+- bounded text preview;
+- participants;
+- sent/received direction;
+- timestamp;
+- attachment name/type/size metadata.
+
+Attachment contents are not read.
+
+Ambient Gmail is intentionally stricter than deliberate BCC/forward capture:
+a message only becomes temporary relationship context when a participant email
+exactly matches a known Tending relationship. Names mentioned in the body are
+not enough.
+
+Matched messages create a private **review question**, never a Moment.
+
+## Email BCC / Forward
+
+The provider-agnostic email route remains available alongside Gmail. Use it when
+you want to deliberately send one message to Tending without connecting a
+mailbox, including from Gmail, Proton Mail or another provider.
 
 Required configuration:
 
@@ -74,7 +109,12 @@ Configure the Resend receiving domain (a Resend-managed receiving domain can be 
 https://<tending-host>/api/context/email/inbound
 ```
 
-Each Tending user/organisation gets a random forwarding address. The webhook:
+Each Tending user/organisation gets a random private address. You can either:
+
+- **BCC** that address on an outbound email you want Tending to notice; or
+- **forward** an existing message to it.
+
+The webhook:
 
 - verifies the Resend/Svix signature and five-minute replay window;
 - accepts mail only when the sender is the email address of the Tending account that created the forwarding source;
@@ -83,7 +123,9 @@ Each Tending user/organisation gets a random forwarding address. The webhook:
 - ignores attachments;
 - never creates a Moment automatically.
 
-This is intentionally preferable to Gmail-wide read access for the first standalone Email release.
+BCC/forward is the deliberate capture route; Gmail is the bounded ambient route.
+Both feed the same relationship-review boundary and neither creates a Moment
+automatically.
 
 ## Slack
 

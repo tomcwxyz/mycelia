@@ -35,6 +35,18 @@ const providers: ProviderDefinition[] = [
     syncPath: "/api/context/google/sync",
   },
   {
+    id: "gmail",
+    label: "Gmail",
+    description:
+      "Notice recent sent and received mail involving known Tending relationships. Only exact participant email matches become review prompts.",
+    connectLabel: "Connect Gmail",
+    connectKind: "redirect",
+    connectPath: "/api/context/gmail/connect",
+    syncPath: "/api/context/gmail/sync",
+    connectedHelp:
+      "Tending checks a bounded recent window and keeps only messages that match a known relationship. Email never becomes a Moment automatically.",
+  },
+  {
     id: "clickup",
     label: "ClickUp",
     description:
@@ -46,14 +58,14 @@ const providers: ProviderDefinition[] = [
   },
   {
     id: "email_forward",
-    label: "Email",
+    label: "Email BCC / Forward",
     description:
-      "Forward or BCC selected mail into relationship review without giving Tending access to your mailbox.",
-    connectLabel: "Set up forwarding",
+      "Deliberately send one email into relationship review without connecting a mailbox. Useful with Gmail, Proton or any other provider.",
+    connectLabel: "Create private address",
     connectKind: "create",
     connectPath: "/api/context/email/source",
     connectedHelp:
-      "Only mail sent from your Tending account email is accepted. Forward or BCC selected messages to this address.",
+      "BCC this private address on an email you send, or forward an existing message to it. Only mail sent from your Tending account email is accepted.",
   },
   {
     id: "slack",
@@ -176,7 +188,7 @@ export function ContextConnections({
 
   async function copy(value: string) {
     await navigator.clipboard.writeText(value);
-    setMessage("Forwarding address copied.");
+    setMessage("BCC / forwarding address copied.");
   }
 
   const hasLiveSource = sources.length > 0;
@@ -259,7 +271,7 @@ export function ContextConnections({
                             disabled={busy !== null}
                             onClick={() => void copy(source.label!)}
                           >
-                            Copy address
+                            Copy BCC address
                           </Button>
                         )}
                         <Button

@@ -103,6 +103,23 @@ export function buildTendingRelationshipCandidate(
     );
   }
 
+  if (event.type === "communication.email_message") {
+    const refs = connectionRefs(matches, false);
+    if (refs.length === 0) return null;
+    const people = peopleLabel(refs.map((ref) => ref.name));
+    const direction = event.context.direction === "sent" ? "sent" : "received";
+    return commonCandidate(
+      event,
+      refs,
+      `Worth remembering from this email about ${people}?`,
+      refs.length === 1
+        ? direction === "sent"
+          ? `You emailed ${people}. Did anything in this exchange change the relationship, create a follow-up, or become worth remembering?`
+          : `You received an email involving ${people}. Did anything in this exchange change the relationship, create a follow-up, or become worth remembering?`
+        : `This email involves ${people}. Is there anything worth remembering about these relationships?`,
+    );
+  }
+
   if (event.type === "communication.email_forwarded") {
     const refs = connectionRefs(matches, true);
     if (refs.length === 0) return null;
