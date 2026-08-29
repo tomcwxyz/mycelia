@@ -20,14 +20,30 @@ function peopleLabel(names: string[]) {
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
+function connectionRefs(
+  matches: ContextIdentityMatchResult,
+  includeRelatedContext: boolean,
+) {
+  const refs = matches.matched.map((match) => ({
+    id: match.connectionId,
+    name: match.connectionName,
+  }));
+  if (includeRelatedContext) {
+    for (const match of matches.relatedContext) {
+      if (!refs.some((ref) => ref.id === match.connectionId)) {
+        refs.push({ id: match.connectionId, name: match.connectionName });
+      }
+    }
+  }
+  return refs;
+}
+
 function commonCandidate(
   event: ContextEvent,
-  matches: ContextIdentityMatchResult,
+  refs: Array<{ id: string; name: string }>,
   title: string,
   prompt: string,
 ): TendingRelationshipReviewCandidate {
-  const connectionIds = matches.matched.map((match) => match.connectionId);
-  const connectionNames = matches.matched.map((match) => match.connectionName);
   const contextSummary = event.content.bodyPreview
     ? `${event.content.title} — ${event.content.bodyPreview}`
     : event.content.title;
@@ -39,8 +55,8 @@ function commonCandidate(
     ...(event.source.externalUrl ? { sourceUrl: event.source.externalUrl } : {}),
     title,
     prompt,
-    connectionIds,
-    connectionNames,
+    connectionIds: refs.map((ref) => ref.id),
+    connectionNames: refs.map((ref) => ref.name),
     occurredAt: event.occurredAt,
     contextSummary,
   };
@@ -49,39 +65,55 @@ function commonCandidate(
 /**
  * Apply Tending's relationship lens to neutral external context.
  *
- * External activity is evidence, not relationship memory. We only create a
- * review candidate when at least one actor deterministically matches a known
- * Tending connection. The candidate remains a question until the user writes
+ * External activity is evidence, not relationship memory. Calendar and ClickUp
+ * require an exact participant/assignee identity match. Deliberately forwarded
+ * email may also use an exact email/name reference in the forwarded content.
+ * In every case the result is only a review question until a person decides
  * what is actually worth remembering.
  */
 export function buildTendingRelationshipCandidate(
   event: ContextEvent,
   matches: ContextIdentityMatchResult,
 ): TendingRelationshipReviewCandidate | null {
-  if (matches.matched.length === 0) return null;
-
-  const connectionNames = matches.matched.map((match) => match.connectionName);
-  const people = peopleLabel(connectionNames);
-
   if (event.type === "meeting.held") {
+    const refs = connectionRefs(matches, false);
+    if (refs.length === 0) return null;
+    const people = peopleLabel(refs.map((ref) => ref.name));
     return commonCandidate(
       event,
-      matches,
+      refs,
       `Worth remembering from ${event.content.title}?`,
-      connectionNames.length === 1
+      refs.length === 1
         ? `You met with ${people}. Did anything happen that changes, strengthens or helps you understand this relationship?`
         : `You met with ${people}. Is there anything worth remembering about these relationships?`,
     );
   }
 
   if (event.type === "work.task_activity") {
+    const refs = connectionRefs(matches, false);
+    if (refs.length === 0) return null;
+    const people = peopleLabel(refs.map((ref) => ref.name));
     return commonCandidate(
       event,
-      matches,
+      refs,
       `Worth remembering from ${event.content.title}?`,
-      connectionNames.length === 1
+      refs.length === 1
         ? `Recent delivery activity in ClickUp involves ${people}. Does it tell you anything useful about the relationship, a follow-up, or how the work is going?`
         : `Recent delivery activity in ClickUp involves ${people}. Is there anything about these relationships worth keeping in Tending?`,
+    );
+  }
+
+  if (event.type === "communication.email_forwarded") {
+    const refs = connectionRefs(matches, true);
+    if (refs.length === 0) return null;
+    const people = peopleLabel(refs.map((ref) => ref.name));
+    return commonCandidate(
+      event,
+      refs,
+      `Worth remembering from this email about ${people}?`,
+      refs.length === 1
+        ? `You deliberately sent this email to Tending and it relates to ${people}. What, if anything, is actually worth remembering about the relationship?`
+        : `You deliberately sent this email to Tending and it relates to ${people}. Is there anything worth keeping about these relationships?`,
     );
   }
 
