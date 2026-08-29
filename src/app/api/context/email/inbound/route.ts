@@ -77,6 +77,7 @@ export async function POST(request: Request) {
     const event = normaliseForwardedEmail(email, {
       sourceToken: token,
       inboundAddress: source.label ?? `${token}@${process.env.EMAIL_INBOUND_DOMAIN}`,
+      ownerEmail: owner.email,
       ingestedAt: now,
     });
 
