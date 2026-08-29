@@ -50,14 +50,24 @@ async function processShortcut(payload: SlackMessageShortcutPayload) {
       ),
     );
 
-  const source = sources.find((candidate) => slackUserId(candidate) === payload.user.id);
-  if (!source) {
+  const matchingSources = sources.filter(
+    (candidate) => slackUserId(candidate) === payload.user.id,
+  );
+  if (matchingSources.length === 0) {
     await respond(
       payload.response_url,
       "Connect this Slack workspace from Tending before using Send to Tending.",
     );
     return;
   }
+  if (matchingSources.length > 1) {
+    await respond(
+      payload.response_url,
+      "This Slack account is connected to more than one Tending organisation. Nothing was sent; disconnect the extra connection before trying again.",
+    );
+    return;
+  }
+  const [source] = matchingSources;
 
   const credentials = decryptContextCredentials<SlackContextCredentials>(
     source.credentialsEncrypted,
