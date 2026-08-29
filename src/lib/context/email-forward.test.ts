@@ -74,6 +74,7 @@ describe("forwarded email relationship context", () => {
       {
         sourceToken: "abc",
         inboundAddress: "abc@in.tending.network",
+        ownerEmail: "tom@example.org",
         ingestedAt: new Date("2026-08-29T11:01:00.000Z"),
       },
     );
@@ -102,4 +103,42 @@ describe("forwarded email relationship context", () => {
     expect(candidate?.prompt).toContain("deliberately sent this email");
     expect(candidate).not.toHaveProperty("moment");
   });
+  it("matches an outgoing email BCC by exact recipient address", () => {
+    const event = normaliseForwardedEmail(
+      {
+        id: "email-2",
+        to: ["Amina Khan <amina@example.org>"],
+        bcc: ["abc@in.tending.network"],
+        from: "Tom <tom@example.org>",
+        created_at: "2026-08-29T11:30:00.000Z",
+        subject: "Proposal",
+        text: "Here is the revised proposal we discussed.",
+      },
+      {
+        sourceToken: "abc",
+        inboundAddress: "abc@in.tending.network",
+        ownerEmail: "tom@example.org",
+        ingestedAt: new Date("2026-08-29T11:31:00.000Z"),
+      },
+    );
+
+    const matches = matchContextActorsToConnections(event, [
+      {
+        id: "connection-1",
+        name: "Amina Khan",
+        contactDetails: { email: "amina@example.org" },
+      },
+    ]);
+
+    expect(matches.matched).toEqual([
+      expect.objectContaining({
+        connectionId: "connection-1",
+        matchedBy: "email",
+      }),
+    ]);
+    expect(buildTendingRelationshipCandidate(event, matches)).toMatchObject({
+      connectionIds: ["connection-1"],
+    });
+  });
+
 });
