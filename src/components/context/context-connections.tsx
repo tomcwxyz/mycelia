@@ -30,6 +30,8 @@ const providers: ProviderDefinition[] = [
     description:
       "Notice recent meetings involving known Tending connections and prompt you to reflect afterwards.",
     connectLabel: "Connect calendar",
+    connectedHelp:
+      "Tending checks recent held meetings automatically every few hours. Check now runs it immediately; only participants matching known relationship emails become review prompts.",
     connectKind: "redirect",
     connectPath: "/api/context/google/connect",
     syncPath: "/api/context/google/sync",
@@ -44,7 +46,7 @@ const providers: ProviderDefinition[] = [
     connectPath: "/api/context/gmail/connect",
     syncPath: "/api/context/gmail/sync",
     connectedHelp:
-      "Tending checks a bounded recent window and keeps only messages that match a known relationship. Email never becomes a Moment automatically.",
+      "Tending checks a bounded recent window automatically every few hours. Check now runs it immediately. Only exact email matches to known relationships become review prompts, and email never becomes a Moment automatically.",
   },
   {
     id: "clickup",
@@ -269,7 +271,7 @@ export function ContextConnections({
                       </p>
                       <p className="mt-1 text-xs text-muted">
                         {source.lastSyncedAt
-                          ? `Last activity ${new Date(source.lastSyncedAt).toLocaleString()}`
+                          ? `Last checked ${new Date(source.lastSyncedAt).toLocaleString()}`
                           : "No activity yet"}
                       </p>
                       {provider.connectedHelp && (
