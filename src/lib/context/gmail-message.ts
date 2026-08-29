@@ -10,7 +10,7 @@ function header(part: GmailPart | undefined, name: string) {
 function parseMailbox(value: string) {
   const angle = value.match(/^(.*)<([^>]+)>$/);
   const email = (angle?.[2] ?? value).trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\\.[^@\s]+$/.test(email)) return undefined;
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return undefined;
   const rawName = angle?.[1]?.trim().replace(/^["']|["']$/g, "");
   return {
     email,
