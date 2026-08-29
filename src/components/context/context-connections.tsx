@@ -12,16 +12,27 @@ export interface RelationshipContextSourceSummary {
   lastSyncedAt: string | null;
 }
 
-const providers = [
+type ProviderDefinition = {
+  id: string;
+  label: string;
+  description: string;
+  connectLabel: string;
+  connectKind: "redirect" | "create" | "future";
+  connectPath?: string;
+  syncPath?: string;
+  connectedHelp?: string;
+};
+
+const providers: ProviderDefinition[] = [
   {
     id: "google_calendar",
     label: "Google Calendar",
     description:
       "Notice recent meetings involving known Tending connections and prompt you to reflect afterwards.",
     connectLabel: "Connect calendar",
+    connectKind: "redirect",
     connectPath: "/api/context/google/connect",
     syncPath: "/api/context/google/sync",
-    live: true,
   },
   {
     id: "clickup",
@@ -29,31 +40,33 @@ const providers = [
     description:
       "Notice recent delivery activity involving known relationships without turning Tending into a task manager.",
     connectLabel: "Connect ClickUp",
+    connectKind: "redirect",
     connectPath: "/api/context/clickup/connect",
     syncPath: "/api/context/clickup/sync",
-    live: true,
+  },
+  {
+    id: "email_forward",
+    label: "Email",
+    description:
+      "Forward or BCC selected mail into relationship review without giving Tending access to your mailbox.",
+    connectLabel: "Set up forwarding",
+    connectKind: "create",
+    connectPath: "/api/context/email/source",
+    connectedHelp:
+      "Only mail sent from your Tending account email is accepted. Forward or BCC selected messages to this address.",
   },
   {
     id: "slack",
     label: "Slack",
     description:
-      "Use selected conversations as relationship context, with anything worth keeping reviewed before it becomes a Moment.",
+      "Send individual Slack messages into relationship review from the message menu — no workspace history sync.",
     connectLabel: "Connect Slack",
-    connectPath: "",
-    syncPath: "",
-    live: false,
+    connectKind: "redirect",
+    connectPath: "/api/context/slack/connect",
+    connectedHelp:
+      "In Slack, choose More actions on a message, then Send to Tending. Only the message you choose is sent.",
   },
-  {
-    id: "email",
-    label: "Email",
-    description:
-      "Bring relevant correspondence into relationship review without treating your inbox as Tending's database.",
-    connectLabel: "Connect email",
-    connectPath: "",
-    syncPath: "",
-    live: false,
-  },
-] as const;
+];
 
 export function ContextConnections({
   organisationId,
@@ -74,7 +87,37 @@ export function ContextConnections({
     )}&returnTo=${encodeURIComponent(`/${orgSlug}/settings`)}`;
   }
 
-  async function sync(source: RelationshipContextSourceSummary, syncPath: string) {
+  async function createConnection(provider: ProviderDefinition) {
+    if (!provider.connectPath) return;
+    setBusy(`connect:${provider.id}`);
+    setMessage(null);
+    try {
+      const response = await fetch(provider.connectPath, {
+        method: "POST",
+        headers: { "x-organisation-id": organisationId },
+      });
+      const body = (await response.json()) as {
+        error?: string;
+        data?: { address?: string };
+      };
+      if (!response.ok) throw new Error(body.error ?? "Connection setup failed");
+      setMessage(
+        body.data?.address
+          ? `Forwarding address ready: ${body.data.address}`
+          : "Connection ready.",
+      );
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Connection setup failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function sync(
+    source: RelationshipContextSourceSummary,
+    syncPath: string,
+  ) {
     setBusy(`sync:${source.id}`);
     setMessage(null);
     try {
@@ -131,9 +174,12 @@ export function ContextConnections({
     }
   }
 
-  const hasLiveSource = sources.some((source) =>
-    source.provider === "google_calendar" || source.provider === "clickup",
-  );
+  async function copy(value: string) {
+    await navigator.clipboard.writeText(value);
+    setMessage("Forwarding address copied.");
+  }
+
+  const hasLiveSource = sources.length > 0;
 
   return (
     <section className="space-y-4 border-t border-border pt-6">
@@ -150,6 +196,7 @@ export function ContextConnections({
           const providerSources = sources.filter(
             (source) => source.provider === provider.id,
           );
+          const available = provider.connectKind !== "future";
 
           return (
             <article
@@ -166,7 +213,7 @@ export function ContextConnections({
                 <span className="shrink-0 text-xs text-muted">
                   {providerSources.length > 0
                     ? "Connected"
-                    : provider.live
+                    : available
                       ? "Available"
                       : "Next"}
                 </span>
@@ -179,24 +226,42 @@ export function ContextConnections({
                       key={source.id}
                       className="rounded-lg border border-border/70 bg-background/50 p-3"
                     >
-                      <p className="text-sm font-medium text-bark">
+                      <p className="break-all text-sm font-medium text-bark">
                         {source.label ?? provider.label}
                       </p>
                       <p className="mt-1 text-xs text-muted">
                         {source.lastSyncedAt
-                          ? `Last checked ${new Date(source.lastSyncedAt).toLocaleString()}`
-                          : "Not checked yet"}
+                          ? `Last activity ${new Date(source.lastSyncedAt).toLocaleString()}`
+                          : "No activity yet"}
                       </p>
+                      {provider.connectedHelp && (
+                        <p className="mt-2 text-xs leading-relaxed text-muted">
+                          {provider.connectedHelp}
+                        </p>
+                      )}
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          disabled={busy !== null}
-                          onClick={() => void sync(source, provider.syncPath)}
-                        >
-                          {busy === `sync:${source.id}` ? "Checking…" : "Check now"}
-                        </Button>
+                        {provider.syncPath && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            disabled={busy !== null}
+                            onClick={() => void sync(source, provider.syncPath!)}
+                          >
+                            {busy === `sync:${source.id}` ? "Checking…" : "Check now"}
+                          </Button>
+                        )}
+                        {provider.id === "email_forward" && source.label && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            disabled={busy !== null}
+                            onClick={() => void copy(source.label!)}
+                          >
+                            Copy address
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant="ghost"
@@ -211,7 +276,7 @@ export function ContextConnections({
                       </div>
                     </div>
                   ))}
-                  {provider.live && provider.id === "clickup" && (
+                  {provider.id === "clickup" && provider.connectPath && (
                     <Button asChild variant="ghost" size="sm">
                       <Link href={connectHref(provider.connectPath)}>
                         Change authorised Workspaces
@@ -219,12 +284,25 @@ export function ContextConnections({
                     </Button>
                   )}
                 </div>
-              ) : provider.live ? (
+              ) : provider.connectKind === "redirect" && provider.connectPath ? (
                 <div className="mt-4">
                   <Button asChild size="sm">
                     <Link href={connectHref(provider.connectPath)}>
                       {provider.connectLabel}
                     </Link>
+                  </Button>
+                </div>
+              ) : provider.connectKind === "create" ? (
+                <div className="mt-4">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={busy !== null}
+                    onClick={() => void createConnection(provider)}
+                  >
+                    {busy === `connect:${provider.id}`
+                      ? "Setting up…"
+                      : provider.connectLabel}
                   </Button>
                 </div>
               ) : (
