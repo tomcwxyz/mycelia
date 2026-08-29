@@ -20,24 +20,14 @@ function peopleLabel(names: string[]) {
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
-/**
- * Apply Tending's relationship lens to a neutral context event.
- *
- * This is intentionally conservative. A calendar event only becomes a review
- * candidate when it has already happened and at least one participant matches
- * a known Tending connection. The candidate is a question, not a Moment.
- */
-export function buildTendingRelationshipCandidate(
+function commonCandidate(
   event: ContextEvent,
   matches: ContextIdentityMatchResult,
-): TendingRelationshipReviewCandidate | null {
-  if (event.type !== "meeting.held" || matches.matched.length === 0) {
-    return null;
-  }
-
+  title: string,
+  prompt: string,
+): TendingRelationshipReviewCandidate {
   const connectionIds = matches.matched.map((match) => match.connectionId);
   const connectionNames = matches.matched.map((match) => match.connectionName);
-  const people = peopleLabel(connectionNames);
   const contextSummary = event.content.bodyPreview
     ? `${event.content.title} — ${event.content.bodyPreview}`
     : event.content.title;
@@ -47,14 +37,53 @@ export function buildTendingRelationshipCandidate(
     sourceEventId: event.id,
     sourceProvider: event.source.provider,
     ...(event.source.externalUrl ? { sourceUrl: event.source.externalUrl } : {}),
-    title: `Worth remembering from ${event.content.title}?`,
-    prompt:
-      connectionNames.length === 1
-        ? `You met with ${people}. Did anything happen that changes, strengthens or helps you understand this relationship?`
-        : `You met with ${people}. Is there anything worth remembering about these relationships?`,
+    title,
+    prompt,
     connectionIds,
     connectionNames,
     occurredAt: event.occurredAt,
     contextSummary,
   };
+}
+
+/**
+ * Apply Tending's relationship lens to neutral external context.
+ *
+ * External activity is evidence, not relationship memory. We only create a
+ * review candidate when at least one actor deterministically matches a known
+ * Tending connection. The candidate remains a question until the user writes
+ * what is actually worth remembering.
+ */
+export function buildTendingRelationshipCandidate(
+  event: ContextEvent,
+  matches: ContextIdentityMatchResult,
+): TendingRelationshipReviewCandidate | null {
+  if (matches.matched.length === 0) return null;
+
+  const connectionNames = matches.matched.map((match) => match.connectionName);
+  const people = peopleLabel(connectionNames);
+
+  if (event.type === "meeting.held") {
+    return commonCandidate(
+      event,
+      matches,
+      `Worth remembering from ${event.content.title}?`,
+      connectionNames.length === 1
+        ? `You met with ${people}. Did anything happen that changes, strengthens or helps you understand this relationship?`
+        : `You met with ${people}. Is there anything worth remembering about these relationships?`,
+    );
+  }
+
+  if (event.type === "work.task_activity") {
+    return commonCandidate(
+      event,
+      matches,
+      `Worth remembering from ${event.content.title}?`,
+      connectionNames.length === 1
+        ? `Recent delivery activity in ClickUp involves ${people}. Does it tell you anything useful about the relationship, a follow-up, or how the work is going?`
+        : `Recent delivery activity in ClickUp involves ${people}. Is there anything about these relationships worth keeping in Tending?`,
+    );
+  }
+
+  return null;
 }
