@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   connections,
@@ -96,6 +96,17 @@ export async function POST(request: Request) {
       .update(contextSources)
       .set({ lastSyncedAt: now, updatedAt: now })
       .where(eq(contextSources.id, source.id));
+
+    const retentionCutoff = new Date(now);
+    retentionCutoff.setUTCDate(retentionCutoff.getUTCDate() - 30);
+    await db
+      .delete(contextEvents)
+      .where(
+        and(
+          eq(contextEvents.sourceId, source.id),
+          lt(contextEvents.occurredAt, retentionCutoff),
+        ),
+      );
 
     if (!candidate) {
       return Response.json({ accepted: true, matched: false });
