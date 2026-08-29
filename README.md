@@ -29,7 +29,7 @@ interactions are moments, the network lives under the soil.
 
 ## Stack
 
-Next.js 15 (App Router) · TypeScript · Tailwind v4 · Drizzle ORM + Neon
+Next.js 16 (App Router) · TypeScript · Tailwind v4 · Drizzle ORM + Neon
 Postgres · NextAuth v5 · Stripe · D3 · OpenRouter/Ollama for AI ·
 ElevenLabs/OpenAI for voice.
 
@@ -77,7 +77,9 @@ CLICKUP_CONTEXT_CLIENT_SECRET=
 
 ClickUp uses OAuth and imports a bounded window of recent task activity from the Workspaces the user explicitly authorises. Only activity involving a deterministically matched Tending relationship is retained for review. It never creates Moments automatically and it does not write to ClickUp.
 
-Slack and email use the same context-source/review contract but their provider adapters are not enabled yet.
+Email uses deliberate forwarding/BCC to a private per-user address; Tending never gets mailbox-wide access. Slack uses a **Send to Tending** message shortcut so only messages the user explicitly chooses leave Slack. Both go through the same review-before-Moment boundary as Calendar and ClickUp.
+
+Provider setup and required environment variables are documented in `docs/standalone-connections.md`.
 
 `CONTEXT_OAUTH_STATE_SECRET` must be at least 32 characters.
 
@@ -95,5 +97,5 @@ The pilot requests `openid`, `email`, and
 
 For Vercel preview testing, make the variables available to the Preview
 environment and use a stable preview/branch alias for `NEXT_PUBLIC_APP_URL`,
-not an ephemeral per-deployment URL. OAuth redirect URLs for Google and ClickUp
-must match the configured deployment URL exactly.
+not an ephemeral per-deployment URL. OAuth redirect URLs for Google, ClickUp and
+Slack must match the configured deployment URL exactly.
