@@ -70,7 +70,7 @@ export async function exchangeClickUpCode(code: string) {
 
 async function clickUpGet<T>(accessToken: string, path: string) {
   const response = await fetch(`${CLICKUP_API_ROOT}${path}`, {
-    headers: { Authorization: accessToken },
+    headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
   });
   const payload = (await response.json().catch(() => ({}))) as T & {
