@@ -16,5 +16,6 @@
       "path": "/api/cron/context-sync",
       "schedule": "17 */3 * * *"
     }
-  ]
+  ],
+  "ignoreCommand": "node -e \"const ref=process.env.VERCEL_GIT_COMMIT_REF||''; const msg=process.env.VERCEL_GIT_COMMIT_MESSAGE||''; const allow=!ref||ref==='main'||ref==='master'||ref.startsWith('preview/')||msg.includes('[vercel-preview]'); process.exit(allow?1:0)\""
 }
